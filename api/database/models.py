@@ -9,6 +9,7 @@ class Movie(Base):
 	movieId = Column(Integer, primary_key=True, index=True)
 	title = Column(String)
 	genres = Column(String)
+
 	
 class Link(Base):
 	__tablename__ = "links"

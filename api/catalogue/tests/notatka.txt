@@ -1,0 +1,2 @@
+naprawic caly ten katalog bo apparently ten folder nie widzi bazy (nie moge z bazy wywalic app.py bo inaczej sie wszystko zepsuje pzdr)
+sprawdzic cale test_jwt.py (nie bylo testowane bo jest problem z IMPORTAMI)
