@@ -1,16 +1,26 @@
+import base64
 from datetime import datetime, timedelta
-from typing import Union, Optional, List
+import io
+import logging
+from time import time
+from typing import Any, Dict, Tuple, Union, Optional, List
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from fastapi import status
+import urllib
 from database.db_sqlalchemy import *
 from database import models
 from database.load_sqlalchemy import *
 import jwt
 from jwt import encode, decode, ExpiredSignatureError, InvalidTokenError
 import bcrypt
+
+#import cv2
+#import requests
+#import numpy as np
 
 app = FastAPI()
 
@@ -484,3 +494,93 @@ def get_user_details(credentials: HTTPAuthorizationCredentials = Depends(securit
         "issued_at": payload.get("iat"),
         "expires_at": payload.get("exp")
     }
+
+"""
+from fastapi import FastAPI, HTTPException
+import cv2
+import numpy as np
+import requests
+from pydantic import BaseModel
+from typing import Optional
+
+# Initialize HOG descriptor/person detector
+hog = cv2.HOGDescriptor()
+hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+
+class ImageURL(BaseModel):
+    url: str
+
+def download_image_from_url(url: str) -> np.ndarray:
+    #
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        
+        image_array = np.asarray(bytearray(response.content), dtype=np.uint8)
+        image = cv2.imdecode(image_array, cv2.IMREAD_COLOR)
+        
+        if image is None:
+            raise ValueError("Could not decode image from URL")
+            
+        return image
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error downloading image: {str(e)}")
+
+def count_people_in_image(image: np.ndarray) -> int:
+    #
+    if image is None:
+        return 0
+    
+    # Convert to RGB and resize if needed for faster processing
+    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
+    height, width = rgb_image.shape[:2]
+    if height > 800 or width > 800:
+        scale = 800 / max(height, width)
+        new_size = (int(width * scale), int(height * scale))
+        rgb_image = cv2.resize(rgb_image, new_size)
+    
+    # Convert to grayscale for detection
+    gray = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2GRAY)
+    
+    # Detect people
+    boxes, weights = hog.detectMultiScale(
+        gray,
+        winStride=(8, 8),
+        padding=(16, 16),
+        scale=1.05
+    )
+    
+    # Return number of detected people
+    return len(boxes)
+
+@app.get("/analyze_img")
+async def analyze_img_get(url: str):
+    #
+    try:
+        image = download_image_from_url(url)
+        people_count = count_people_in_image(image)
+        
+        return {"people_count": people_count}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/analyze_img")
+async def analyze_img_post(image_data: ImageURL):
+    #
+    try:
+        image = download_image_from_url(image_data.url)
+        people_count = count_people_in_image(image)
+        
+        return {"people_count": people_count}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+    # usunac
+"""
