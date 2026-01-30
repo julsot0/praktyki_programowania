@@ -1,7 +1,0 @@
-commit
-
-git status
-git add *
-git commit -m "tresc" (np. "86c5ru614 : update 2")
-git push
-git status
