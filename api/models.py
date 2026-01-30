@@ -1,4 +1,4 @@
-from database.db_sqlalchemy import Base
+from db_sqlalchemy import Base
 from sqlalchemy import JSON, Column, Integer, String, Float
 from sqlalchemy.ext.mutable import MutableList
 

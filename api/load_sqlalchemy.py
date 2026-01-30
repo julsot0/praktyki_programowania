@@ -1,18 +1,17 @@
 import csv
-from database.models import *
-from database.db_sqlalchemy import SessionLocal, engine
-from database.app import hash_password
+from models import *
+from db_sqlalchemy import SessionLocal, engine
+from app import hash_password
 
 Base.metadata.create_all(bind=engine)
 session = SessionLocal()
-
 
 def _open_csv(path):
     return open(path, encoding="utf-8")
 
 
 def load_movies():
-    with _open_csv("movies.csv") as fh:
+    with _open_csv("database/movies.csv") as fh:
         read = list(csv.reader(fh))
         for row in read[1:]:
             movie = Movie(
@@ -26,7 +25,7 @@ def load_movies():
             session.refresh(movie)
 
 def load_links():
-    with _open_csv("links.csv") as fh:
+    with _open_csv("database/links.csv") as fh:
         read = list(csv.reader(fh))
         for row in read[1:]:
             link = Link(
@@ -40,7 +39,7 @@ def load_links():
             session.refresh(link)
 
 def load_ratings():
-    with _open_csv("ratings.csv") as fh:
+    with _open_csv("database/ratings.csv") as fh:
         read = list(csv.reader(fh))
         for row in read[1:]:
             rating = Rating(
@@ -54,7 +53,7 @@ def load_ratings():
             session.refresh(rating)
 
 def load_tags():
-    with _open_csv("tags.csv") as fh:
+    with _open_csv("database/tags.csv") as fh:
         read = list(csv.reader(fh))
         for row in read[1:]:
             tag = Tag(
@@ -76,7 +75,6 @@ def load_users():
     for user_data in users:
         existing_user = session.query(User).filter(User.username == user_data["username"]).first()
         if not existing_user:
-            # Sprawdź czy model User ma pole roles
             if hasattr(User, 'roles'):
                 user = User(
                     username=user_data["username"],
@@ -92,6 +90,7 @@ def load_users():
             session.add(user)
     
     session.commit()
+    session.refresh(user)
 
 def load_data():
     
@@ -115,5 +114,6 @@ def load_data():
     session.close()
 
 if session.query(Movie).first() is None:
+    print("Database is empty. Loading data...")
     load_data()
     
