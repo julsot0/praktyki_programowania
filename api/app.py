@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Union, Optional, List
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -53,8 +53,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_jwt_token(username: str, roles: List[str]):
     payload = {
         "sub": username,
-        "iat": datetime.utcnow(),
-        "exp": datetime.utcnow() + timedelta(hours=1),
+        "iat": datetime.now(UTC),
+        "exp": datetime.now(UTC) + timedelta(hours=1),
         "roles": roles
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
@@ -65,17 +65,17 @@ def verify_jwt_token(token: str) -> Optional[dict]:
         return payload
     except ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAFIRMOWANE,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired"
         )
     except InvalidTokenError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAFIRMOWANE,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token"
         )
     except Exception:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAFIRMOWANE,
+            status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials"
         )
 
