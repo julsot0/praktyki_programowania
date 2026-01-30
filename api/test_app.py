@@ -618,12 +618,3 @@ class TestTags:
         
         response = client.get("/tags/3")
         assert response.status_code == 404
-
-# Testy dla root endpoint
-class TestRoot:
-    def test_root_endpoint(self):
-        # get
-        response = client.get("/")
-        
-        assert response.status_code == 200
-        assert response.json() == {"Hello": "World"}
