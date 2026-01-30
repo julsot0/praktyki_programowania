@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from datetime import datetime, timedelta
 import jwt
 
+# Naprawić importy :)
 from api.database.app import app, SECRET_KEY, ALGORITHM  
 
 client = TestClient(app)
