@@ -1,0 +1,5 @@
+names:
+  0: license_plate
+path: C:\Users\Julia\Desktop\semestr 1\dpp\dpp2\praktyki_programowania\datasets
+train: images/train
+val: images/val

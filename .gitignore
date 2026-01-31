@@ -1,0 +1,6 @@
+src/__pycache__/
+datasets/images/train/
+datasets/images/val/
+datasets/labels/train/
+datasets/labels/val/
+runs/detect/yolo_plate_detect/
