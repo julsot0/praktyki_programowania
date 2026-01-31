@@ -12,10 +12,8 @@ def initialize():
             status TEXT NOT NULL
         )
     ''')
-    
     conn.commit()
     conn.close()
-    print(f"Database '{DB_NAME}' has been initialized.")
 
 if __name__ == "__main__":
     initialize()
