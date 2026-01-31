@@ -1,45 +1,56 @@
-import pika
 import json
 import time
+import pika
 from analyze_image import count_people
 
-def callback(ch, method, properties, body):
-    data = json.loads(body)
-    url = data.get('url')
-    name = data.get('name', 'Unnamed task')
-    
-    print(f"\nNew task: Name: {name} URL: {url} - Analyzing...")
 
-    start_time = time.time()
-    
-    people = count_people(url)
-    
-    duration = time.time() - start_time
+def callback(channel, delivery, props, payload):
+    message = json.loads(payload.decode("utf-8"))
 
-    if people > 0:
-        print(f"Detected {people} people.")
+    task_name = message.get("name", "Unnamed task")
+    image_url = message.get("url")
+
+    print(f"\nTask received → {task_name}")
+    print(f"Source image: {image_url}")
+    print("Processing...")
+
+    t0 = time.perf_counter()
+    detected = count_people(image_url)
+    elapsed = time.perf_counter() - t0
+
+    if detected:
+        print(f"People detected: {detected}")
     else:
-        print(f"No people detected.")
+        print("No people detected")
 
-    print(f"Duration: {duration:.2f}s")
-    
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+    print(f"Processing time: {elapsed:.2f}s")
+
+    channel.basic_ack(delivery_tag=delivery.delivery_tag)
+
 
 def start():
-    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+    params = pika.ConnectionParameters(host="localhost")
+    connection = pika.BlockingConnection(params)
     channel = connection.channel()
-    channel.queue_declare(queue='image_queue')
-    channel.basic_qos(prefetch_count=1)
-    channel.basic_consume(queue='image_queue', on_message_callback=callback)
 
-    print("=" * 50)
-    print("Image Analysis Worker Ready")
-    print("Listening for new image processing tasks...")
-    print("=" * 50)
+    channel.queue_declare(queue="image_queue", durable=False)
+    channel.basic_qos(prefetch_count=1)
+    channel.basic_consume(
+        queue="image_queue",
+        on_message_callback=callback,
+        auto_ack=False
+    )
+
+    print("-" * 48)
+    print("Image consumer started")
+    print("Waiting for messages...")
+    print("-" * 48)
+
     channel.start_consuming()
+
 
 if __name__ == "__main__":
     try:
         start()
     except KeyboardInterrupt:
-        print("Stopped by user.")
+        print("\nConsumer terminated manually")
