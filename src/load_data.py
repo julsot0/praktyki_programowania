@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 import os
 import random
 
-# wip
+# aktualnie nieużywane nigdzie
 
 def load_dataset(xml_file, images_dir):
     if not os.path.exists(xml_file):
@@ -53,20 +53,3 @@ def load_dataset(xml_file, images_dir):
         if missing_files > 0:
             print(f"Pominięto {missing_files} plików")
     return data_points
-
-def split_dataset(dataset, split_ratio=0.3, random_state=None):
-    # losowy state
-    if random_state is not None:
-        random.seed(random_state)
-    
-    # losowe
-    shuffled_data = random.sample(dataset, len(dataset))
-    
-    # punkt podzialu
-    partition_point = int(len(shuffled_data) * split_ratio)
-    
-    # podział
-    test_subset = shuffled_data[:partition_point]
-    train_subset = shuffled_data[partition_point:]
-    
-    return train_subset, test_subset

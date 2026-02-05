@@ -1,22 +1,17 @@
 import os
-#os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
-#os.environ['OMP_NUM_THREADS'] = '1'
-
 import time
 import pandas as pd
 import sys
 import difflib
-from src.load_data import load_dataset, split_dataset
+from src.load_data import load_dataset
 from src.process import ALPRPipeline
 from src.metrics import calculate_iou, calculate_final_grade
+from sklearn.model_selection import train_test_split
 
-# dziala
-
-PHOTOS_DIR = os.path.join(os.getcwd(), 'photos')
-ANNOTATIONS_FILE = os.path.join(os.getcwd(), 'annotations.xml')
-
-MODEL_NAME = 'best.pt'
-TEST_SPLIT = 0.6
+iou_thres = 0.5
+photos_dir = os.path.join(os.getcwd(), 'photos')
+annotations_file = os.path.join(os.getcwd(), 'annotations.xml')
+model_name = 'best.pt'
 
 def get_similarity_score(gt, pred):
     if not gt or not pred: return 0.0
@@ -29,17 +24,19 @@ def main():
     print("SYSTEM ROZPOZNAWANIA TABLIC")
     print("=" * 50)
     
-    model_path = f"runs/detect/yolo_plate_detect/weights/{MODEL_NAME}"
+    model_path = f"runs/detect/yolo_plate_detect/weights/{model_name}"
     if not os.path.exists(model_path):
         print("Brak modelu 'best.pt' - najpierw uruchom 'train_model.py'")
         sys.exit(1)
 
-    full_data = load_dataset(ANNOTATIONS_FILE, PHOTOS_DIR)
-    _, test_set = split_dataset(full_data, split_ratio=TEST_SPLIT, random_state=26)
+    full_data = load_dataset(annotations_file, photos_dir)
+    _, test_set = train_test_split(
+        full_data,
+        test_size=0.3, 
+        random_state=42)
     
     target_count = min(100, len(test_set))
     if target_count == 0: target_count = len(full_data)
-    test_subset = test_set[:target_count]
     
     os.environ["YOLO_VERBOSE"] = "False"
     pipeline = ALPRPipeline(model_path)
@@ -50,26 +47,28 @@ def main():
     
     print(f"Przetwarzanie {target_count} obrazów...")
     print()
-
-    for idx, data in enumerate(test_subset):
+    
+    for idx, data in enumerate(test_set):
         try:
-            pred_text, pred_box = pipeline.process_image(data['path'])
+            raw_text, pred_text, pred_box = pipeline.process_image(data['path'])
             is_correct = False
             similarity = 0.0
             
             if pred_box:
                 iou = calculate_iou(pred_box, data['bbox'])
-                if pred_text and data['text_gt']:
-                    similarity = get_similarity_score(data['text_gt'], pred_text)
-                    if similarity >= 0.85:
-                        is_correct = True
-                        correct_ocr_count += 1
+
+                if iou >= iou_thres:
+                    if pred_text and data['text_gt']:
+                        similarity = get_similarity_score(data['text_gt'], pred_text)
+                        if similarity >= 1:
+                            is_correct = True
+                            correct_ocr_count += 1
             
             # wyswietlanie
             fname = os.path.basename(data['path'])
             status = "✓" if is_correct else "X"
             
-            print(f"{idx+1:3d}. {fname:12} | GT: {data['text_gt']:15} | OCR: {pred_text or '-':15} | "
+            print(f"{idx+1:3d}. {fname:12} | GT: {data['text_gt']:15} | OCR1: {raw_text or '-':15} | OCR2: {pred_text or '-':15} | "
                   f"{status}")
 
             results.append({
@@ -105,10 +104,7 @@ def main():
             print(f"{label:20} : {value}")
     
     print("─" * 30)
-    
-    # zapis do CSV
-    pd.DataFrame(results).to_csv("wyniki_final.csv", index=False)
-    print(f"\nWyniki zapisano do: wyniki_final.csv")
+
 
 if __name__ == "__main__":
     main()

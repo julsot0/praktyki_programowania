@@ -3,16 +3,15 @@ import random
 import shutil
 import yaml
 import xml.etree.ElementTree as ET
+from sklearn.model_selection import train_test_split
 
-# dziala
 
 # adnotacje i zdjecia
-ANNOTATIONS_FILE = os.path.join(os.getcwd(), 'annotations.xml')
-IMAGES_DIR = os.path.join(os.getcwd(), 'photos')
-BASE_DIR = os.getcwd()
+annotations_file = os.path.join(os.getcwd(), 'annotations.xml')
+photos_dir = os.path.join(os.getcwd(), 'photos')
+base_dir = os.getcwd()
 
 def create_yolo_directory_structure(base_path: str) -> dict:
-    # tworzy strukturę folderów dla YOLO
     datasets_dir = os.path.join(base_path, 'datasets')
     
     dirs = {
@@ -29,7 +28,6 @@ def create_yolo_directory_structure(base_path: str) -> dict:
 
 
 def parse_xml_annotations(xml_file: str) -> list:
-    # parsuje plik XML z adnotacjami i zwraca listę danych
     tree = ET.parse(xml_file)
     root = tree.getroot()
     
@@ -75,40 +73,16 @@ def convert_to_yolo_format(left_x: float, top_y: float, right_x: float, bottom_y
     
     return f"0 {x_center:.6f} {y_center:.6f} {width_norm:.6f} {height_norm:.6f}"
 
-
-def split_dataset(data_items: list, train_ratio: float = 0.8) -> tuple:
-    # dzieli dane na zestaw treningowy i walidacyjny
-    data_items_copy = data_items.copy()
-    random.shuffle(data_items_copy)
-    
-    split_idx = int(len(data_items_copy) * train_ratio)
-    train_set = data_items_copy[:split_idx]
-    val_set = data_items_copy[split_idx:]
-    
-    return train_set, val_set
-
-
-def find_image_file(base_dir: str, filename: str) -> str:
-    # znajduje plik obrazu, sprawdzając różne rozszerzenia
-    name_without_ext, _ = os.path.splitext(filename)
-    extensions = ['.jpg', '.JPG', '.jpeg', '.png', '.PNG', '.bmp']
-    
-    for ext in extensions:
-        full_path = os.path.join(base_dir, name_without_ext + ext)
-        if os.path.exists(full_path):
-            return full_path, name_without_ext + ext
-    return None, filename
-
-
-def process_dataset_subset(dataset: list, images_dir: str, 
-                          images_dest: str, labels_dest: str):
+def process_dataset_subset(dataset, images_dir, 
+                          images_dest, labels_dest):
     # przetwarza podzbiór danych - kopiuje obrazy i tworzy pliki txt z etykietami
     for item in dataset:
-        src_path, actual_filename = find_image_file(images_dir, item['file_name'])
-        
+        filename = item["file_name"]
+        src_path = os.path.join(images_dir, filename)
+
         if src_path and os.path.exists(src_path):
-            shutil.copy(src_path, os.path.join(images_dest, actual_filename))
-            txt_name = os.path.splitext(actual_filename)[0] + ".txt"
+            shutil.copy(src_path, os.path.join(images_dest, filename))
+            txt_name = os.path.splitext(filename)[0] + ".txt"
             txt_path = os.path.join(labels_dest, txt_name)
             
             with open(txt_path, "w") as f:
@@ -131,24 +105,26 @@ def convert_to_yolo():
     # główna funkcja konwertująca dane z XML do YOLO
     print("konwersja do YOLO")
     
-    dirs = create_yolo_directory_structure(BASE_DIR)
-    data_items = parse_xml_annotations(ANNOTATIONS_FILE)
+    dirs = create_yolo_directory_structure(base_dir)
+    data_items = parse_xml_annotations(annotations_file)
     
     if not data_items:
         print("Brak danych xml")
         return
     
     # train/val
-    train_set, val_set = split_dataset(data_items, train_ratio=0.8)
-    print(f"   Znaleziono {len(data_items)} próbek.")
-    print(f"   Trening: {len(train_set)}, Walidacja: {len(val_set)}")
+    train_set, val_set = train_test_split(
+        data_items,
+        test_size=0.3, # TEST SIZE 0.3
+        random_state=42)
+    
+    print(f"Znaleziono {len(data_items)} próbek.")
+    print(f"Trening: {len(train_set)}, Walidacja: {len(val_set)}")
     
     # zbior treningowy
-    process_dataset_subset(train_set, IMAGES_DIR, 
-                          dirs['images_train'], dirs['labels_train'])
+    process_dataset_subset(train_set, photos_dir, dirs['images_train'], dirs['labels_train'])
     # zbior walidacyjny
-    process_dataset_subset(val_set, IMAGES_DIR,
-                          dirs['images_val'], dirs['labels_val'])
+    process_dataset_subset(val_set, photos_dir, dirs['images_val'], dirs['labels_val'])
     
     # stworzenie YAMLa
     create_yaml_config(dirs['datasets'])
