@@ -2,8 +2,6 @@ import xml.etree.ElementTree as ET
 import os
 import random
 
-# aktualnie nieużywane nigdzie
-
 def load_dataset(xml_file, images_dir):
     if not os.path.exists(xml_file):
         raise FileNotFoundError(f"Brak pliku XML: {xml_file}")

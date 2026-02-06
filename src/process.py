@@ -55,10 +55,8 @@ class ALPRPipeline:
     # ocr
     def run_ocr(self, plate_img):
         plate_img = cv2.resize(plate_img, None, fx=1.6, fy=1.6, interpolation=cv2.INTER_LINEAR)
-        #processed = self.preprocess_plate(plate_img)
         text = "".join(self.reader.readtext(plate_img, detail=0))
-        #text = "".join(self.reader.readtext(processed, detail=0))
-
+        
         return text
 
     # pl
@@ -104,7 +102,7 @@ class ALPRPipeline:
         if len(text) < 7:
             return text
 
-        # third character (index 2) decides format
+        # format
         if text[2].isalpha():
             # AAA
             return text[:8]

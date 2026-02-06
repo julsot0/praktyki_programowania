@@ -1,7 +1,5 @@
-CONF_THRESHOLD = 0.25
-IOU_THRESHOLD = 0.25
-
-# wip
+#CONF_THRESHOLD = 0.25
+#IOU_THRESHOLD = 0.25
 
 def calculate_iou(boxA, boxB):
     if len(boxA) != 4 or len(boxB) != 4:
